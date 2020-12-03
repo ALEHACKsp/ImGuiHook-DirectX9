@@ -15,7 +15,7 @@ ImGui Hook for DirectX 9. It supports x86 and x64
 ## Getting Started
 - To use it, you need to compile it and inject your dll file in an application process.
 
-![Screenshot](https://raw.githubusercontent.com/inc-Majdev/ImGuiHook/master/ImGuiHook%20%5BDX9%5D/Image/Screenshot.jpg)
+![Screenshot](https://raw.githubusercontent.com/inc-Majdev/ImGuiHook/master/ImGuiHook%20%5BDX9%5D/Image/Screenshot.png)
 
 ## Built With
 * [ImGui v1.79](https://github.com/ocornut/imgui) - Dear ImGui: Bloat-free Immediate Mode Graphical User interface for C++ with minimal dependencies
