@@ -13,6 +13,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Hook.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="ImGui\imconfig.h">
       <Filter>ImGui</Filter>
     </ClInclude>
@@ -28,20 +31,11 @@
     <ClInclude Include="ImGui\imgui_internal.h">
       <Filter>ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="ImGui\imstb_rectpack.h">
-      <Filter>ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="ImGui\imstb_textedit.h">
-      <Filter>ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="ImGui\imstb_truetype.h">
-      <Filter>ImGui</Filter>
-    </ClInclude>
-    <ClInclude Include="Hook.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Source.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="ImGui\imgui.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
@@ -57,11 +51,11 @@
     <ClCompile Include="ImGui\imgui_impl_win32.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="ImGui\imgui_widgets.cpp">
+    <ClCompile Include="ImGui\imgui_tables.cpp">
       <Filter>ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Source.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="ImGui\imgui_widgets.cpp">
+      <Filter>ImGui</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
