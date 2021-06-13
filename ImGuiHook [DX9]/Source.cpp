@@ -3,8 +3,7 @@
 #include "ImGui/imgui_impl_dx9.h"
 #include "ImGui/imgui_impl_win32.h"
 
-void InputHandler()
-{
+void InputHandler() {
 	for (int i = 0; i < 5; i++) ImGui::GetIO().MouseDown[i] = false;
 	int button = -1;
 	if (GetAsyncKeyState(VK_LBUTTON)) button = 0;
@@ -19,10 +18,9 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	return CallWindowProc(ProcessWndProc, hWnd, msg, wParam, lParam);
 }
 
-HRESULT APIENTRY MJHook_EndScene(IDirect3DDevice9* pDevice){
+HRESULT APIENTRY MJHook_EndScene(IDirect3DDevice9* pDevice) {
 	if (pDevice == nullptr) return EndScene_orig(pDevice);
-	if (!ImGui_Initialised)
-	{
+	if (!ImGui_Initialised){
 		ImGui::CreateContext();
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		ImGui::GetIO().WantCaptureMouse || ImGui::GetIO().WantTextInput || ImGui::GetIO().WantCaptureKeyboard;
@@ -42,13 +40,10 @@ HRESULT APIENTRY MJHook_EndScene(IDirect3DDevice9* pDevice){
 	ImGui_ImplDX9_NewFrame();
 	ImGui_ImplWin32_NewFrame();
 	ImGui::NewFrame();
+	ImGui::GetIO().MouseDrawCursor = ShowMenu;
 	if (ShowMenu == true) {
 		InputHandler();
 		ImGui::ShowDemoWindow();
-		ImGui::GetIO().MouseDrawCursor = 1;
-	}
-	else {
-		ImGui::GetIO().MouseDrawCursor = 0;
 	}
 	ImGui::EndFrame();
 	ImGui::Render();
@@ -56,44 +51,44 @@ HRESULT APIENTRY MJHook_EndScene(IDirect3DDevice9* pDevice){
 	return EndScene_orig(pDevice);
 }
 
-HRESULT APIENTRY MJHook_Present(IDirect3DDevice9* pDevice, const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion){
+HRESULT APIENTRY MJHook_Present(IDirect3DDevice9* pDevice, const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion) {
 	return Present_orig(pDevice, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 }
 
-HRESULT APIENTRY MJHook_DrawIndexedPrimitive(IDirect3DDevice9* pDevice, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount){
+HRESULT APIENTRY MJHook_DrawIndexedPrimitive(IDirect3DDevice9* pDevice, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
 	return DrawIndexedPrimitive_orig(pDevice, Type, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
 }
 
-HRESULT APIENTRY MJHook_DrawPrimitive(IDirect3DDevice9* pDevice, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount){
+HRESULT APIENTRY MJHook_DrawPrimitive(IDirect3DDevice9* pDevice, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
 	return DrawPrimitive_orig(pDevice, PrimitiveType, StartVertex, PrimitiveCount);
 }
 
-HRESULT APIENTRY MJHook_SetTexture(LPDIRECT3DDEVICE9 pDevice, DWORD Sampler, IDirect3DBaseTexture9* pTexture){
+HRESULT APIENTRY MJHook_SetTexture(LPDIRECT3DDEVICE9 pDevice, DWORD Sampler, IDirect3DBaseTexture9* pTexture) {
 	return SetTexture_orig(pDevice, Sampler, pTexture);
 }
 
-HRESULT APIENTRY MJHook_Reset(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters){
+HRESULT APIENTRY MJHook_Reset(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters) {
 	ImGui_ImplDX9_InvalidateDeviceObjects();
 	HRESULT ResetReturn = Reset_orig(pDevice, pPresentationParameters);
 	ImGui_ImplDX9_CreateDeviceObjects();
 	return ResetReturn;
 }
 
-HRESULT APIENTRY MJHook_SetStreamSource(LPDIRECT3DDEVICE9 pDevice, UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT sStride){
+HRESULT APIENTRY MJHook_SetStreamSource(LPDIRECT3DDEVICE9 pDevice, UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT sStride) {
 	if (StreamNumber == 0)
 		Stride = sStride;
 
 	return SetStreamSource_orig(pDevice, StreamNumber, pStreamData, OffsetInBytes, sStride);
 }
 
-HRESULT APIENTRY MJHook_SetVertexDeclaration(LPDIRECT3DDEVICE9 pDevice, IDirect3DVertexDeclaration9* pdecl){
+HRESULT APIENTRY MJHook_SetVertexDeclaration(LPDIRECT3DDEVICE9 pDevice, IDirect3DVertexDeclaration9* pdecl) {
 	if (pdecl != NULL) {
 		pdecl->GetDeclaration(decl, &numElements);
 	}
 	return SetVertexDeclaration_orig(pDevice, pdecl);
 }
 
-HRESULT APIENTRY MJHook_SetVertexShaderConstantF(LPDIRECT3DDEVICE9 pDevice, UINT StartRegister, const float* pConstantData, UINT Vector4fCount){
+HRESULT APIENTRY MJHook_SetVertexShaderConstantF(LPDIRECT3DDEVICE9 pDevice, UINT StartRegister, const float* pConstantData, UINT Vector4fCount) {
 	if (pConstantData != NULL) {
 		mStartregister = StartRegister;
 		mVectorCount = Vector4fCount;
@@ -101,7 +96,7 @@ HRESULT APIENTRY MJHook_SetVertexShaderConstantF(LPDIRECT3DDEVICE9 pDevice, UINT
 	return SetVertexShaderConstantF_orig(pDevice, StartRegister, pConstantData, Vector4fCount);
 }
 
-HRESULT APIENTRY MJHook_SetVertexShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DVertexShader9* veShader){
+HRESULT APIENTRY MJHook_SetVertexShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DVertexShader9* veShader) {
 	if (veShader != NULL) {
 		vShader = veShader;
 		vShader->GetFunction(NULL, &vSize);
@@ -109,7 +104,7 @@ HRESULT APIENTRY MJHook_SetVertexShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DVert
 	return SetVertexShader_orig(pDevice, veShader);
 }
 
-HRESULT APIENTRY MJHook_SetPixelShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DPixelShader9* piShader){
+HRESULT APIENTRY MJHook_SetPixelShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DPixelShader9* piShader) {
 	if (piShader != NULL) {
 		pShader = piShader;
 		pShader->GetFunction(NULL, &pSize);
@@ -117,7 +112,7 @@ HRESULT APIENTRY MJHook_SetPixelShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DPixel
 	return SetPixelShader_orig(pDevice, piShader);
 }
 
-DWORD WINAPI Thread(LPVOID lpParameter) {
+DWORD WINAPI MainThread(LPVOID lpParameter) {
 	while (!GetModuleHandleA("d3d9.dll")) {
 		Sleep(200);
 	}
@@ -183,15 +178,22 @@ DWORD WINAPI Thread(LPVOID lpParameter) {
 	return 1;
 }
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved){
-	switch (ul_reason_for_call) {
+BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved) {
+	switch (dwReason){
 	case DLL_PROCESS_ATTACH:
 		Module = hModule;
 		DisableThreadLibraryCalls(hModule);
-		CreateThread(0, 0, Thread, 0, 0, 0);
+		CreateThread(0, 0, MainThread, 0, 0, 0);
+		break;
+	case DLL_PROCESS_DETACH:
+		FreeLibraryAndExitThread(hModule, TRUE);
+		break;
+	case DLL_THREAD_ATTACH:
+		break;
+	case DLL_THREAD_DETACH:
+		break;
+	default:
 		break;
 	}
 	return TRUE;
 }
-
-

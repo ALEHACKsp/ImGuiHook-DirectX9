@@ -1,7 +1,3 @@
-#include <windows.h>
-#include <fstream>
-#include <string>
-#include <vector>
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <detours.h>
@@ -11,7 +7,6 @@
 
 HMODULE Module;
 UINT Stride;
-IDirect3DVertexDeclaration9* pDecl;
 D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH];
 UINT numElements;
 UINT mStartregister;
@@ -20,10 +15,10 @@ IDirect3DVertexShader9* vShader;
 UINT vSize;
 IDirect3DPixelShader9* pShader;
 UINT pSize;
-bool ShowMenu = false;
-bool ImGui_Initialised = false;
 HWND ProcessHwnd = NULL;
 WNDPROC ProcessWndProc = NULL;
+bool ShowMenu = false;
+bool ImGui_Initialised = false;
 
 typedef HRESULT(APIENTRY* SetStreamSource)(IDirect3DDevice9*, UINT, IDirect3DVertexBuffer9*, UINT, UINT);
 SetStreamSource SetStreamSource_orig = 0;
