@@ -33,6 +33,6 @@ Supports x86 and x64
 * [ImGui v1.83](https://github.com/ocornut/imgui) - Dear ImGui: Bloat-free Immediate Mode Graphical User interface for C++ with minimal dependencies
 * [DirectX Software Development Kit](https://www.microsoft.com/en-us/download/details.aspx?id=6812) - This DirectX SDK release contains updates to tools, utilities, samples, documentation, and runtime debug files for x64 and x86 platforms.
 * [Microsoft Detours](https://github.com/microsoft/Detours) - Microsoft Detours is an open source library for intercepting, monitoring and instrumenting binary functions on Microsoft Windows. It is developed by Microsoft and is most commonly used to intercept Win32 API calls within Windows applications.
-* 
+
 ## Authors
 * [Majdev](https://github.com/inc-Majdev) [Coding]
