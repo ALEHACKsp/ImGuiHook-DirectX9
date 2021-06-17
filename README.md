@@ -21,8 +21,13 @@ Supports x86 and x64
 ```
 
 ## Demo
-* [DirectX9 Demo (x64)](https://)
-* [DirectX9 Demo (x86)](https://)
+* [DirectX9 Demo (x64)](https://github.com/inc-Majdev/ImGuiHook-DirectX9/releases/download/v1.83/DirectX9.Demo.x64.dll)
+* [DirectX9 Demo (x86)](https://github.com/inc-Majdev/ImGuiHook-DirectX9/releases/download/v1.83/DirectX9.Demo.x86.dll)
+
+[GFX Test Environment](https://github.com/inc-Majdev/ImGuiHook/tree/main/Build/GFX%20Test%20Environment)
+
+
+`Requirements: Visual C++ Redistributable (2019) | Windows SDK 10.0.19041.0 or higher`
 
 ## Built With
 * [ImGui v1.83](https://github.com/ocornut/imgui) - Dear ImGui: Bloat-free Immediate Mode Graphical User interface for C++ with minimal dependencies
