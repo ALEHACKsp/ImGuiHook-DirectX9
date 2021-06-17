@@ -3,6 +3,22 @@
 #include "ImGui/imgui_impl_dx9.h"
 #include "ImGui/imgui_impl_win32.h"
 
+bool ShowMenu = true;
+bool ImGui_Initialised = false;
+
+namespace Process {
+	DWORD ID;
+	HANDLE Handle;
+	HWND Hwnd;
+	HMODULE Module;
+	WNDPROC WndProc;
+	int WindowWidth;
+	int WindowHeight;
+	LPCSTR Title;
+	LPCSTR ClassName;
+	LPCSTR Path;
+}
+
 void InputHandler() {
 	for (int i = 0; i < 5; i++) ImGui::GetIO().MouseDown[i] = false;
 	int button = -1;
@@ -10,31 +26,29 @@ void InputHandler() {
 	if (button != -1) ImGui::GetIO().MouseDown[button] = true;
 }
 
-extern LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
-LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	if (ShowMenu && ImGui_ImplWin32_WndProcHandler(hWnd, msg, wParam, lParam)) {
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+LRESULT APIENTRY WndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+	if (ShowMenu) {
+		ImGui_ImplWin32_WndProcHandler(hwnd, uMsg, wParam, lParam);
 		return true;
 	}
-	return CallWindowProc(ProcessWndProc, hWnd, msg, wParam, lParam);
+	return CallWindowProc(Process::WndProc, hwnd, uMsg, wParam, lParam);
 }
 
-HRESULT APIENTRY MJHook_EndScene(IDirect3DDevice9* pDevice) {
-	if (pDevice == nullptr) return EndScene_orig(pDevice);
-	if (!ImGui_Initialised){
+HRESULT APIENTRY MJEndScene(IDirect3DDevice9* pDevice) {
+	if (!ImGui_Initialised) {
 		ImGui::CreateContext();
+
 		ImGuiIO& io = ImGui::GetIO(); (void)io;
 		ImGui::GetIO().WantCaptureMouse || ImGui::GetIO().WantTextInput || ImGui::GetIO().WantCaptureKeyboard;
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-		D3DDEVICE_CREATION_PARAMETERS d3dcp;
-		pDevice->GetCreationParameters(&d3dcp);
-		ProcessHwnd = d3dcp.hFocusWindow;
-		if (ProcessHwnd != NULL){
-			ProcessWndProc = (WNDPROC)SetWindowLongPtr(ProcessHwnd, GWLP_WNDPROC, (LONG_PTR)WndProc);
-			ImGui_ImplWin32_Init(ProcessHwnd);
-			ImGui_ImplDX9_Init(pDevice);
-			ImGui::GetIO().ImeWindowHandle = ProcessHwnd;
-			ImGui_Initialised = true;
-		}
+
+		ImGui_ImplWin32_Init(Process::Hwnd);
+		ImGui_ImplDX9_Init(pDevice);
+		ImGui_ImplDX9_CreateDeviceObjects();
+		ImGui::GetIO().ImeWindowHandle = Process::Hwnd;
+		Process::WndProc = (WNDPROC)SetWindowLongPtr(Process::Hwnd, GWLP_WNDPROC, (__int3264)(LONG_PTR)WndProc);
+		ImGui_Initialised = true;
 	}
 	if (GetAsyncKeyState(VK_INSERT) & 1) ShowMenu = !ShowMenu;
 	ImGui_ImplDX9_NewFrame();
@@ -48,142 +62,190 @@ HRESULT APIENTRY MJHook_EndScene(IDirect3DDevice9* pDevice) {
 	ImGui::EndFrame();
 	ImGui::Render();
 	ImGui_ImplDX9_RenderDrawData(ImGui::GetDrawData());
-	return EndScene_orig(pDevice);
+	return oEndScene(pDevice);
 }
 
-HRESULT APIENTRY MJHook_Present(IDirect3DDevice9* pDevice, const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion) {
-	return Present_orig(pDevice, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+HRESULT APIENTRY MJPresent(IDirect3DDevice9* pDevice, const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion) {
+	return oPresent(pDevice, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
 }
 
-HRESULT APIENTRY MJHook_DrawIndexedPrimitive(IDirect3DDevice9* pDevice, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
-	return DrawIndexedPrimitive_orig(pDevice, Type, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
+HRESULT APIENTRY MJDrawIndexedPrimitive(IDirect3DDevice9* pDevice, D3DPRIMITIVETYPE Type, INT BaseVertexIndex, UINT MinVertexIndex, UINT NumVertices, UINT startIndex, UINT primCount) {
+	return oDrawIndexedPrimitive(pDevice, Type, BaseVertexIndex, MinVertexIndex, NumVertices, startIndex, primCount);
 }
 
-HRESULT APIENTRY MJHook_DrawPrimitive(IDirect3DDevice9* pDevice, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
-	return DrawPrimitive_orig(pDevice, PrimitiveType, StartVertex, PrimitiveCount);
+HRESULT APIENTRY MJDrawPrimitive(IDirect3DDevice9* pDevice, D3DPRIMITIVETYPE PrimitiveType, UINT StartVertex, UINT PrimitiveCount) {
+	return oDrawPrimitive(pDevice, PrimitiveType, StartVertex, PrimitiveCount);
 }
 
-HRESULT APIENTRY MJHook_SetTexture(LPDIRECT3DDEVICE9 pDevice, DWORD Sampler, IDirect3DBaseTexture9* pTexture) {
-	return SetTexture_orig(pDevice, Sampler, pTexture);
+HRESULT APIENTRY MJSetTexture(LPDIRECT3DDEVICE9 pDevice, DWORD Sampler, IDirect3DBaseTexture9* pTexture) {
+	return oSetTexture(pDevice, Sampler, pTexture);
 }
 
-HRESULT APIENTRY MJHook_Reset(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters) {
-	ImGui_ImplDX9_InvalidateDeviceObjects();
-	HRESULT ResetReturn = Reset_orig(pDevice, pPresentationParameters);
-	ImGui_ImplDX9_CreateDeviceObjects();
-	return ResetReturn;
+HRESULT APIENTRY MJReset(IDirect3DDevice9* pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters) {
+	return oReset(pDevice, pPresentationParameters);;
 }
 
-HRESULT APIENTRY MJHook_SetStreamSource(LPDIRECT3DDEVICE9 pDevice, UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT sStride) {
-	if (StreamNumber == 0)
-		Stride = sStride;
-
-	return SetStreamSource_orig(pDevice, StreamNumber, pStreamData, OffsetInBytes, sStride);
+HRESULT APIENTRY MJSetStreamSource(LPDIRECT3DDEVICE9 pDevice, UINT StreamNumber, IDirect3DVertexBuffer9* pStreamData, UINT OffsetInBytes, UINT sStride) {
+	return oSetStreamSource(pDevice, StreamNumber, pStreamData, OffsetInBytes, sStride);
 }
 
-HRESULT APIENTRY MJHook_SetVertexDeclaration(LPDIRECT3DDEVICE9 pDevice, IDirect3DVertexDeclaration9* pdecl) {
-	if (pdecl != NULL) {
-		pdecl->GetDeclaration(decl, &numElements);
-	}
-	return SetVertexDeclaration_orig(pDevice, pdecl);
+HRESULT APIENTRY MJSetVertexDeclaration(LPDIRECT3DDEVICE9 pDevice, IDirect3DVertexDeclaration9* pdecl) {
+	return oSetVertexDeclaration(pDevice, pdecl);
 }
 
-HRESULT APIENTRY MJHook_SetVertexShaderConstantF(LPDIRECT3DDEVICE9 pDevice, UINT StartRegister, const float* pConstantData, UINT Vector4fCount) {
-	if (pConstantData != NULL) {
-		mStartregister = StartRegister;
-		mVectorCount = Vector4fCount;
-	}
-	return SetVertexShaderConstantF_orig(pDevice, StartRegister, pConstantData, Vector4fCount);
+HRESULT APIENTRY MJSetVertexShaderConstantF(LPDIRECT3DDEVICE9 pDevice, UINT StartRegister, const float* pConstantData, UINT Vector4fCount) {
+	return oSetVertexShaderConstantF(pDevice, StartRegister, pConstantData, Vector4fCount);
 }
 
-HRESULT APIENTRY MJHook_SetVertexShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DVertexShader9* veShader) {
-	if (veShader != NULL) {
-		vShader = veShader;
-		vShader->GetFunction(NULL, &vSize);
-	}
-	return SetVertexShader_orig(pDevice, veShader);
+HRESULT APIENTRY MJSetVertexShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DVertexShader9* veShader) {
+	return oSetVertexShader(pDevice, veShader);
 }
 
-HRESULT APIENTRY MJHook_SetPixelShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DPixelShader9* piShader) {
-	if (piShader != NULL) {
-		pShader = piShader;
-		pShader->GetFunction(NULL, &pSize);
-	}
-	return SetPixelShader_orig(pDevice, piShader);
+HRESULT APIENTRY MJSetPixelShader(LPDIRECT3DDEVICE9 pDevice, IDirect3DPixelShader9* piShader) {
+	return oSetPixelShader(pDevice, piShader);
 }
 
 DWORD WINAPI MainThread(LPVOID lpParameter) {
-	while (!GetModuleHandleA("d3d9.dll")) {
-		Sleep(200);
+	bool WindowFocus = false;
+	while (WindowFocus == false) {
+		DWORD ForegroundWindowProcessID;
+		GetWindowThreadProcessId(GetForegroundWindow(), &ForegroundWindowProcessID);
+		if (GetCurrentProcessId() == ForegroundWindowProcessID) {
+
+			Process::ID = GetCurrentProcessId();
+			Process::Handle = GetCurrentProcess();
+			Process::Hwnd = GetForegroundWindow();
+
+			RECT TempRect;
+			GetWindowRect(Process::Hwnd, &TempRect);
+			Process::WindowWidth = TempRect.right - TempRect.left;
+			Process::WindowHeight = TempRect.bottom - TempRect.top;
+
+			char TempTitle[MAX_PATH];
+			GetWindowText(Process::Hwnd, TempTitle, sizeof(TempTitle));
+			Process::Title = TempTitle;
+
+			char TempClassName[MAX_PATH];
+			GetClassName(Process::Hwnd, TempClassName, sizeof(TempClassName));
+			Process::ClassName = TempClassName;
+
+			char TempPath[MAX_PATH];
+			GetModuleFileNameEx(Process::Handle, NULL, TempPath, sizeof(TempPath));
+			Process::Path = TempPath;
+
+			WindowFocus = true;
+		}
 	}
-	IDirect3D9* d3d = NULL;
-	IDirect3DDevice9* d3ddev = NULL;
-	HWND tmpWnd = CreateWindowA("BUTTON", "DX", WS_SYSMENU | WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 300, 300, NULL, NULL, Module, NULL);
-	if (tmpWnd == NULL) {
-		return 0;
+	bool InitHook = false;
+	while (InitHook == false) {
+		WNDCLASSEX WindowClass;
+		HWND WindowHwnd;
+
+		WindowClass.cbSize = sizeof(WNDCLASSEX);
+		WindowClass.style = CS_HREDRAW | CS_VREDRAW;
+		WindowClass.lpfnWndProc = DefWindowProc;
+		WindowClass.cbClsExtra = 0;
+		WindowClass.cbWndExtra = 0;
+		WindowClass.hInstance = Process::Module;
+		WindowClass.hIcon = NULL;
+		WindowClass.hCursor = NULL;
+		WindowClass.hbrBackground = NULL;
+		WindowClass.lpszMenuName = NULL;
+		WindowClass.lpszClassName = "MJ";
+		WindowClass.hIconSm = NULL;
+		RegisterClassEx(&WindowClass);
+		WindowHwnd = CreateWindow(WindowClass.lpszClassName, "DirectX Window", WS_OVERLAPPEDWINDOW, 0, 0, 100, 100, NULL, NULL, WindowClass.hInstance, NULL);
+		if (WindowHwnd == NULL) {
+			break;
+		}
+
+		LPDIRECT3D9 Direct3D9 = ((LPDIRECT3D9(__stdcall*)(uint32_t))(Direct3DCreate9))(D3D_SDK_VERSION);
+		if (Direct3D9 == NULL) {
+			DestroyWindow(WindowHwnd);
+			UnregisterClass(WindowClass.lpszClassName, WindowClass.hInstance);
+			break;
+		}
+
+		D3DDISPLAYMODE DisplayMode;
+		if (Direct3D9->GetAdapterDisplayMode(D3DADAPTER_DEFAULT, &DisplayMode) < 0) {
+			DestroyWindow(WindowHwnd);
+			UnregisterClass(WindowClass.lpszClassName, WindowClass.hInstance);
+			break;
+		}
+			
+		D3DPRESENT_PARAMETERS Params;
+		Params.BackBufferWidth = 0;
+		Params.BackBufferHeight = 0;
+		Params.BackBufferFormat = DisplayMode.Format;
+		Params.BackBufferCount = 0;
+		Params.MultiSampleType = D3DMULTISAMPLE_NONE;
+		Params.MultiSampleQuality = NULL;
+		Params.SwapEffect = D3DSWAPEFFECT_DISCARD;
+		Params.hDeviceWindow = WindowHwnd;
+		Params.Windowed = 1;
+		Params.EnableAutoDepthStencil = 0;
+		Params.AutoDepthStencilFormat = D3DFMT_UNKNOWN;
+		Params.Flags = NULL;
+		Params.FullScreen_RefreshRateInHz = 0;
+		Params.PresentationInterval = 0;
+
+		LPDIRECT3DDEVICE9 Device;
+		if (Direct3D9->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, WindowHwnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &Params, &Device) < 0) {
+			Direct3D9->Release();
+			DestroyWindow(WindowHwnd);
+			UnregisterClass(WindowClass.lpszClassName, WindowClass.hInstance);
+			break;
+		}
+
+		uintx_t* dVtable = (uintx_t*)Device;
+		dVtable = (uintx_t*)dVtable[0];
+
+		oEndScene = (EndScene)dVtable[42];
+		oPresent = (Present)dVtable[17];
+		oDrawIndexedPrimitive = (DrawIndexedPrimitive)dVtable[82];
+		oDrawPrimitive = (DrawPrimitive)dVtable[81];
+		oSetTexture = (SetTexture)dVtable[65];
+		oReset = (Reset)dVtable[16];
+		oSetStreamSource = (SetStreamSource)dVtable[100];
+		oSetVertexDeclaration = (SetVertexDeclaration)dVtable[87];
+		oSetVertexShaderConstantF = (SetVertexShaderConstantF)dVtable[94];
+		oSetVertexShader = (SetVertexShader)dVtable[92];
+		oSetPixelShader = (SetPixelShader)dVtable[107];
+
+		DetourTransactionBegin();
+		DetourUpdateThread(GetCurrentThread());
+		DetourAttach(&(LPVOID&)oEndScene, (PBYTE)MJEndScene);
+		DetourAttach(&(LPVOID&)oPresent, (PBYTE)MJPresent);
+		DetourAttach(&(LPVOID&)oDrawIndexedPrimitive, (PBYTE)MJDrawIndexedPrimitive);
+		DetourAttach(&(LPVOID&)oDrawPrimitive, (PBYTE)MJDrawPrimitive);
+		DetourAttach(&(LPVOID&)oSetTexture, (PBYTE)MJSetTexture);
+		DetourAttach(&(LPVOID&)oReset, (PBYTE)MJReset);
+		DetourAttach(&(LPVOID&)oSetStreamSource, (PBYTE)MJSetStreamSource);
+		DetourAttach(&(LPVOID&)oSetVertexDeclaration, (PBYTE)MJSetVertexDeclaration);
+		DetourAttach(&(LPVOID&)oSetVertexShaderConstantF, (PBYTE)MJSetVertexShaderConstantF);
+		DetourAttach(&(LPVOID&)oSetVertexShader, (PBYTE)MJSetVertexShader);
+		DetourAttach(&(LPVOID&)oSetPixelShader, (PBYTE)MJSetPixelShader);
+		
+		DetourTransactionCommit();
+		Direct3D9->Release();
+		Direct3D9 = NULL;
+		Device->Release();
+		Device = NULL;
+		DestroyWindow(WindowHwnd);
+		UnregisterClass(WindowClass.lpszClassName, WindowClass.hInstance);
+		InitHook = true;
 	}
-	d3d = Direct3DCreate9(D3D_SDK_VERSION);
-	if (d3d == NULL) {
-		DestroyWindow(tmpWnd);
-		return 0;
-	}
-	D3DPRESENT_PARAMETERS d3dpp;
-	ZeroMemory(&d3dpp, sizeof(d3dpp));
-	d3dpp.Windowed = TRUE;
-	d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-	d3dpp.hDeviceWindow = tmpWnd;
-	d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
-	HRESULT result = d3d->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, tmpWnd, D3DCREATE_SOFTWARE_VERTEXPROCESSING, &d3dpp, &d3ddev);
-	if (result != D3D_OK) {
-		d3d->Release();
-		DestroyWindow(tmpWnd);
-		return 0;
-	}
-    #if defined _M_X64
-	DWORD64* dVtable = (DWORD64*)d3ddev;
-	dVtable = (DWORD64*)dVtable[0];
-    #elif defined _M_IX86
-	DWORD* dVtable = (DWORD*)d3ddev;
-	dVtable = (DWORD*)dVtable[0];
-    #endif
-	SetStreamSource_orig = (SetStreamSource)dVtable[100];
-	SetVertexDeclaration_orig = (SetVertexDeclaration)dVtable[87];
-	SetVertexShaderConstantF_orig = (SetVertexShaderConstantF)dVtable[94];
-	SetVertexShader_orig = (SetVertexShader)dVtable[92];
-	SetPixelShader_orig = (SetPixelShader)dVtable[107];
-	DrawIndexedPrimitive_orig = (DrawIndexedPrimitive)dVtable[82];
-	DrawPrimitive_orig = (DrawPrimitive)dVtable[81];
-	SetTexture_orig = (SetTexture)dVtable[65];
-	Present_orig = (Present)dVtable[17];
-	EndScene_orig = (EndScene)dVtable[42];
-	Reset_orig = (Reset)dVtable[16];
-	Sleep(2000);
-	DetourTransactionBegin();
-	DetourUpdateThread(GetCurrentThread());
-	DetourAttach(&(LPVOID&)SetStreamSource_orig, (PBYTE)MJHook_SetStreamSource);
-	DetourAttach(&(LPVOID&)SetVertexDeclaration_orig, (PBYTE)MJHook_SetVertexDeclaration);
-	DetourAttach(&(LPVOID&)SetVertexShaderConstantF_orig, (PBYTE)MJHook_SetVertexShaderConstantF);
-	DetourAttach(&(LPVOID&)SetVertexShader_orig, (PBYTE)MJHook_SetVertexShader);
-	DetourAttach(&(LPVOID&)SetPixelShader_orig, (PBYTE)MJHook_SetPixelShader);
-	DetourAttach(&(LPVOID&)DrawIndexedPrimitive_orig, (PBYTE)MJHook_DrawIndexedPrimitive);
-	DetourAttach(&(LPVOID&)DrawPrimitive_orig, (PBYTE)MJHook_DrawPrimitive);
-	DetourAttach(&(LPVOID&)SetTexture_orig, (PBYTE)MJHook_SetTexture);
-	DetourAttach(&(LPVOID&)Present_orig, (PBYTE)MJHook_Present);
-	DetourAttach(&(LPVOID&)EndScene_orig, (PBYTE)MJHook_EndScene);
-	DetourAttach(&(LPVOID&)Reset_orig, (PBYTE)MJHook_Reset);
-	DetourTransactionCommit();
-	d3ddev->Release();
-	d3d->Release();
-	DestroyWindow(tmpWnd);
-	return 1;
+	return 0;
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD dwReason, LPVOID lpReserved) {
-	switch (dwReason){
+	switch (dwReason) {
 	case DLL_PROCESS_ATTACH:
-		Module = hModule;
 		DisableThreadLibraryCalls(hModule);
-		CreateThread(0, 0, MainThread, 0, 0, 0);
+		if (ChecktDirectXVersion(DirectXVersion.D3D9) == true) {
+			Process::Module = hModule;
+			CreateThread(0, 0, MainThread, 0, 0, 0);
+		}
 		break;
 	case DLL_PROCESS_DETACH:
 		FreeLibraryAndExitThread(hModule, TRUE);

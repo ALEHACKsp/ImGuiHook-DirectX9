@@ -1,3 +1,7 @@
+#include <windows.h>
+#include <stdint.h>
+#include <assert.h>
+#include <psapi.h>
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <detours.h>
@@ -5,50 +9,78 @@
 #pragma comment(lib, "d3dx9.lib")
 #pragma comment(lib, "detours.lib")
 
-HMODULE Module;
-UINT Stride;
-D3DVERTEXELEMENT9 decl[MAXD3DDECLLENGTH];
-UINT numElements;
-UINT mStartregister;
-UINT mVectorCount;
-IDirect3DVertexShader9* vShader;
-UINT vSize;
-IDirect3DPixelShader9* pShader;
-UINT pSize;
-HWND ProcessHwnd = NULL;
-WNDPROC ProcessWndProc = NULL;
-bool ShowMenu = false;
-bool ImGui_Initialised = false;
-
-typedef HRESULT(APIENTRY* SetStreamSource)(IDirect3DDevice9*, UINT, IDirect3DVertexBuffer9*, UINT, UINT);
-SetStreamSource SetStreamSource_orig = 0;
-
-typedef HRESULT(APIENTRY* SetVertexDeclaration)(IDirect3DDevice9*, IDirect3DVertexDeclaration9*);
-SetVertexDeclaration SetVertexDeclaration_orig = 0;
-
-typedef HRESULT(APIENTRY* SetVertexShaderConstantF)(IDirect3DDevice9*, UINT, const float*, UINT);
-SetVertexShaderConstantF SetVertexShaderConstantF_orig = 0;
-
-typedef HRESULT(APIENTRY* SetVertexShader)(IDirect3DDevice9*, IDirect3DVertexShader9*);
-SetVertexShader SetVertexShader_orig = 0;
-
-typedef HRESULT(APIENTRY* SetPixelShader)(IDirect3DDevice9*, IDirect3DPixelShader9*);;
-SetPixelShader SetPixelShader_orig = 0;
-
-typedef HRESULT(APIENTRY* DrawIndexedPrimitive)(IDirect3DDevice9*, D3DPRIMITIVETYPE, INT, UINT, UINT, UINT, UINT);
-DrawIndexedPrimitive DrawIndexedPrimitive_orig = 0;
-
-typedef HRESULT(APIENTRY* DrawPrimitive)(IDirect3DDevice9*, D3DPRIMITIVETYPE, UINT, UINT);
-DrawPrimitive DrawPrimitive_orig = 0;
-
-typedef HRESULT(APIENTRY* SetTexture)(IDirect3DDevice9*, DWORD, IDirect3DBaseTexture9*);
-SetTexture SetTexture_orig = 0;
-
-typedef HRESULT(APIENTRY* Present) (IDirect3DDevice9*, const RECT*, const RECT*, HWND, const RGNDATA*);
-Present Present_orig = 0;
+#if defined _M_X64
+typedef uint64_t uintx_t;
+#elif defined _M_IX86
+typedef uint32_t uintx_t;
+#endif
 
 typedef HRESULT(APIENTRY* EndScene) (IDirect3DDevice9*);
-EndScene EndScene_orig = 0;
+EndScene oEndScene = NULL;
+
+typedef HRESULT(APIENTRY* Present) (IDirect3DDevice9*, const RECT*, const RECT*, HWND, const RGNDATA*);
+Present oPresent = NULL;
+
+typedef HRESULT(APIENTRY* DrawIndexedPrimitive)(IDirect3DDevice9*, D3DPRIMITIVETYPE, INT, UINT, UINT, UINT, UINT);
+DrawIndexedPrimitive oDrawIndexedPrimitive = NULL;
+
+typedef HRESULT(APIENTRY* DrawPrimitive)(IDirect3DDevice9*, D3DPRIMITIVETYPE, UINT, UINT);
+DrawPrimitive oDrawPrimitive = NULL;
+
+typedef HRESULT(APIENTRY* SetTexture)(IDirect3DDevice9*, DWORD, IDirect3DBaseTexture9*);
+SetTexture oSetTexture = NULL;
 
 typedef HRESULT(APIENTRY* Reset)(IDirect3DDevice9*, D3DPRESENT_PARAMETERS*);
-Reset Reset_orig = 0;
+Reset oReset = NULL;
+
+typedef HRESULT(APIENTRY* SetStreamSource)(IDirect3DDevice9*, UINT, IDirect3DVertexBuffer9*, UINT, UINT);
+SetStreamSource oSetStreamSource = NULL;
+
+typedef HRESULT(APIENTRY* SetVertexDeclaration)(IDirect3DDevice9*, IDirect3DVertexDeclaration9*);
+SetVertexDeclaration oSetVertexDeclaration = NULL;
+
+typedef HRESULT(APIENTRY* SetVertexShaderConstantF)(IDirect3DDevice9*, UINT, const float*, UINT);
+SetVertexShaderConstantF oSetVertexShaderConstantF = NULL;
+
+typedef HRESULT(APIENTRY* SetVertexShader)(IDirect3DDevice9*, IDirect3DVertexShader9*);
+SetVertexShader oSetVertexShader = NULL;
+
+typedef HRESULT(APIENTRY* SetPixelShader)(IDirect3DDevice9*, IDirect3DPixelShader9*);
+SetPixelShader oSetPixelShader = NULL;
+
+struct _DirectXVersion {
+	int Unknown = 0;
+	int D3D9 = 1;
+	int D3D10 = 2;
+	int D3D11 = 3;
+	int D3D12 = 4;
+}DirectXVersion;
+
+bool ChecktDirectXVersion(int _DirectXVersion) {
+	if (_DirectXVersion = DirectXVersion.D3D12) {
+		if (GetModuleHandle("d3d12.dll") != NULL) {
+			return true;
+		}
+	}
+
+	if (_DirectXVersion = DirectXVersion.D3D11) {
+		if (GetModuleHandle("d3d11.dll") != NULL) {
+			return true;
+		}
+	}
+
+	if (_DirectXVersion = DirectXVersion.D3D10) {
+		if (GetModuleHandle("d3d10.dll") != NULL) {
+			return true;
+		}
+	}
+
+	if (_DirectXVersion = DirectXVersion.D3D9) {
+		if (GetModuleHandle("d3d9.dll") != NULL) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
